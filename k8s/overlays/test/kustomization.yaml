@@ -8,12 +8,7 @@ secretGenerator:
   - name: random-quotes-secrets
     literals:
       - homepageDisplay="blah test"
-
-images:
- - name: octopussamples/randomquotes-k8s
-   newName: octopussamples/randomquotes-k8s
-   newTag: "0.1.5"
-
+      
 patches:
  - target:
     kind: Ingress
