@@ -23,10 +23,6 @@ on:
     # Inputs below are surfaced as a form in the UI when triggering manually.
     workflow_dispatch:
       inputs:
-        no_cache:
-          description: 'Explicitly disable build cache for this run'
-          type: boolean
-          default: false
         custom_tag:
           description: 'Custom tag to apply to the built image (overrides versioning from GitVersion)'
           type: string
@@ -81,8 +77,3 @@ jobs:
                 tags: |
                   ${{ env.DOCKERHUB_REPO }}:${{ inputs.custom_tag || steps.determine_version.outputs.semVer }}
                   ${{ env.DOCKERHUB_REPO }}:latest
-                # Caching - use GHA cache for layers by default,
-                # but allow opt-out via workflow_dispatch input
-                no-cache: ${{ inputs.no_cache == true }}
-                cache-from: type=gha
-                cache-to: type=gha,mode=max
