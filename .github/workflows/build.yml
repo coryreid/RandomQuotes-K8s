@@ -23,6 +23,10 @@ on:
     # Inputs below are surfaced as a form in the UI when triggering manually.
     workflow_dispatch:
       inputs:
+        push:
+          description: 'Push the built image to Docker Hub - ignored for non-manual triggers'
+          type: boolean
+          default: false
         custom_tag:
           description: 'Custom tag to apply to the built image (overrides versioning from GitVersion)'
           type: string
@@ -70,7 +74,7 @@ jobs:
                 # See Dockerfile comments for details on why context must be src/.
                 context: src
                 file: src/RandomQuotes.Web/Dockerfile
-                push: true
+                push: ${{ github.event_name == 'push' || inputs.push == true }}
                 platforms: linux/amd64
                 # Tag with both the version from GitVersion and "latest" for easy reference. 
                 # Allow overriding the version tag via workflow_dispatch input for flexibility.
