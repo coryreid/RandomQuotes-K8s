@@ -16,27 +16,29 @@ EXPOSE 8080
 #       ...
 FROM mcr.microsoft.com/dotnet/sdk:10.0-azurelinux3.0 AS build
 WORKDIR /src
-# Copy only the .csproj first to enable Docker layer caching on restore.
-# Source path is relative to the build context (src/); destination mirrors that structure.
-COPY ["RandomQuotes.Web/RandomQuotes.Web.csproj", "RandomQuotes.Web/"]
-RUN dotnet restore "RandomQuotes.Web/RandomQuotes.Web.csproj"
-# Copy the full source tree into /src (build context root → container /src)
 COPY . .
-# Switch into the project directory to run the build
-RUN dotnet build "RandomQuotes.Web/RandomQuotes.Web.csproj" --no-restore -c Release
+RUN dotnet restore "RandomQuotes.sln"
+# Build the full solution so both the web project and test project are compiled
+RUN dotnet build "RandomQuotes.sln" --no-restore -c Release
 
-# --- Stage 3: publish ---
-# Continues from the build stage. --no-build skips redundant recompilation.
+# --- Stage 3: test ---
+# If the app built cleanly, we can run tests before publishing.
+# This allows the image to act as the sole CI before deployment push
+FROM build AS test
+RUN dotnet test "RandomQuotes.Tests/RandomQuotes.Tests.csproj" --no-build -c Release
+
+# --- Stage 4: publish ---
+# Continues from the test stage, ensuring tests pass before an image is produced.
 # Output is written to /app/publish inside this stage's filesystem.
-FROM build AS publish
+FROM test AS publish
 RUN dotnet publish "RandomQuotes.Web/RandomQuotes.Web.csproj" --no-build -c Release -o /app/publish /p:UseAppHost=false
 
-# --- Stage 4: final ---
+# --- Stage 5: final ---
 # Returns to the lightweight base image and copies only the publish output.
 # Nothing from the SDK or build stages is included, keeping the image small.
 FROM base AS final
 WORKDIR /app
-# Copy publish output from Stage 3 into the runtime image at /app
+# Copy publish output from Stage 4 into the runtime image at /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "RandomQuotes.Web.dll"]
 ENV ASPNETCORE_HTTP_PORTS=8080
