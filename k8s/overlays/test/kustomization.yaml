@@ -8,9 +8,3 @@ secretGenerator:
   - name: random-quotes-secrets
     literals:
       - homepageDisplay="blah test"
-      
-patches:
- - target:
-    kind: Ingress
-    name: randomquotes-ingress-nginx
-   path: randomquotes-ingress-nginx.yaml
